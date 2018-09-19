@@ -8,6 +8,7 @@
 
 # In[ ]:
 
+
 from jove.Def_NFA import mk_nfa
 from lex                 import lex
 from yacc                import yacc
@@ -18,6 +19,7 @@ from jove.StateNameSanitizers import ResetStNum, NxtStateStr
 # 
 
 # In[ ]:
+
 
 # -----------------------------------------------------------------------------
 # reparseNEW.py
@@ -249,10 +251,48 @@ def p_error(t):
 
 # In[ ]:
 
-def re2nfa(s, stno = 0):
+
+def rename_nfa_states(N):
+    """Tack-on I for initial, F for final, and IF for init+final states.
+       Return the renamed NFA.
+    """
+    def compose2(f, g):
+        return lambda x: f(g(x))
+    Q           = N["Q"]
+    Q0          = N["Q0"]
+    F           = N["F"]
+    
+    IF_states   = Q0 & F
+    F_states    = (F - Q0)
+    I_states    = (Q0 - F)
+    Oth_states  = (Q - (Q0 | F))
+
+    IF_ren = lambda x: ("IF"+x if x in IF_states else x)
+    F_ren  = lambda x: ("F"+x  if x in F_states  else x)
+    I_ren  = lambda x: ("I"+x  if x in I_states  else x)
+    ren    = compose2(compose2(IF_ren, F_ren), I_ren)
+
+    Q01    = set(map(IF_ren, map(I_ren, Q0)))
+    F1     = set(map(IF_ren, map(F_ren, F)))
+    Q1     = Oth_states | Q01 | F1
+
+    Delta1 = dict( ((ren(q),i),
+                    set(map(ren,nss)))
+                   for ((q,i), nss) in N["Delta"].items() )
+
+    return { "Q"     : Q1,
+             "Sigma" : N["Sigma"],
+             "Delta" : Delta1,
+             "Q0"    : Q01,
+             "F"     : F1 }
+
+
+def re2nfa(s, stno = 0, IF=True):
     """Given a string s representing an RE and an optional
        state number stno (default 0), generate an NFA that
-       is language equivalent to the RE
+       is language equivalent to the RE.
+       If IF is set to false, the state renamings to follow
+       the convention of I, F, and IF are suppressed.    
     """
     # Reset the state number generator to 0
     ResetStNum() 
@@ -266,17 +306,17 @@ def re2nfa(s, stno = 0):
     #-- FEED IT THE LEXER --
     myparsednfa = reparser.parse(s, lexer=relexer)
     #-- for debugging : return dotObj_nfa(myparsednfa, nfaname)
-    return myparsednfa
+
+    if IF:
+        return rename_nfa_states(myparsednfa)
+    else:
+        return myparsednfa
 
 
 # In[ ]:
+
 
 print('''You may use any of these help commands:
 help(re2nfa)
 ''')
-
-
-# In[ ]:
-
-
 
