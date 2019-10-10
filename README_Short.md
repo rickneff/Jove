@@ -48,7 +48,8 @@ Then git clone Jove from
 
 3) If you have bought the ACPP book, look at its Appendix B to know which
  Jove functions are in which Jove (Jupyter) notebooks
-
+# Try It
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/rickneff/Jove.git/Animated)
 # End
 
 
